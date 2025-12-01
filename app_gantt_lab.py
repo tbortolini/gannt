@@ -86,11 +86,12 @@ def carregar_df_de_excel(xls, aba):
 
 def preparar_df_para_gantt(df):
     """
-    Garante colunas essenciais e retorna cópia pronta para uso no Gantt.
+    Ordena por Projeto e Início e adiciona um índice numérico 'y_idx'
+    para controlar a posição no eixo Y e permitir desenhar linhas entre projetos.
     """
     df_g = df.copy()
-    # Ordenar por projeto e início
     df_g = df_g.sort_values(by=["Projeto", "Início"]).reset_index(drop=True)
+    df_g["y_idx"] = df_g.index  # posição numérica para o eixo Y
     return df_g
 
 
@@ -101,26 +102,88 @@ def fig_gantt(df, titulo):
       - Tarefa
       - Início
       - Fim
+      - y_idx (posição no eixo Y)
+    Com:
+      - fundo branco
+      - linha preta pontilhada entre projetos
     """
+    # Garantir que existe y_idx
+    if "y_idx" not in df.columns:
+        df = preparar_df_para_gantt(df)
+
+    # Gráfico usando y_idx como eixo Y numérico
     fig = px.timeline(
         df,
         x_start="Início",
         x_end="Fim",
-        y="Tarefa",
+        y="y_idx",
         color="Projeto",
         title=titulo,
         hover_data=["Projeto", "Tarefa", "Entrega_mensurável"]
         if "Entrega_mensurável" in df.columns
         else ["Projeto", "Tarefa"]
     )
-    fig.update_yaxes(autorange="reversed")
+
+    # Substituir ticks numéricos pelos nomes das tarefas
+    fig.update_yaxes(
+        tickmode="array",
+        tickvals=df["y_idx"],
+        ticktext=df["Tarefa"],
+        autorange="reversed"
+    )
+
+    # Fundo branco
     fig.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
         xaxis_title="Tempo",
         yaxis_title="Tarefas",
         legend_title="Projeto",
         margin=dict(l=50, r=30, t=70, b=50),
     )
+
+    # Linhas pretas pontilhadas entre projetos
+    shapes = []
+    for i in range(len(df) - 1):
+        projeto_atual = df["Projeto"].iloc[i]
+        proximo_projeto = df["Projeto"].iloc[i + 1]
+        if projeto_atual != proximo_projeto:
+            # linha horizontal entre i e i+1 (no meio: i + 0.5)
+            shapes.append(
+                dict(
+                    type="line",
+                    xref="x domain",
+                    yref="y",
+                    x0=0,
+                    x1=1,
+                    y0=i + 0.5,
+                    y1=i + 0.5,
+                    line=dict(color="black", width=1, dash="dot"),
+                )
+            )
+
+    if shapes:
+        fig.update_layout(shapes=shapes)
+
     return fig
+
+
+def gerar_botao_download_png(fig, nome_arquivo="gantt.png", label="Baixar gráfico como PNG"):
+    """
+    Gera um botão de download de PNG para a figura Plotly.
+    Requer 'kaleido' instalado.
+    """
+    try:
+        png_bytes = fig.to_image(format="png")
+        st.download_button(
+            label=label,
+            data=png_bytes,
+            file_name=nome_arquivo,
+            mime="image/png"
+        )
+    except Exception as e:
+        st.warning(f"Não foi possível gerar o PNG automaticamente ({e}). "
+                   f"Verifique se o pacote 'kaleido' está instalado.")
 
 
 # ======================================
@@ -199,6 +262,9 @@ if modo == "Carregar planilha Excel":
         fig = fig_gantt(df_g, f"Cronograma – {aba_escolhida}")
         st.plotly_chart(fig, use_container_width=True)
 
+        # Botão de download em PNG
+        gerar_botao_download_png(fig, nome_arquivo=f"gantt_{aba_escolhida}.png")
+
     else:
         st.info("Envie um arquivo Excel para gerar o gráfico de Gantt.")
 
@@ -265,6 +331,9 @@ else:
                 st.markdown("### Gráfico de Gantt (dados preenchidos na tela)")
                 fig = fig_gantt(df_g, "Cronograma – entrada manual")
                 st.plotly_chart(fig, use_container_width=True)
+
+                # Botão de download em PNG
+                gerar_botao_download_png(fig, nome_arquivo="gantt_manual.png")
 
                 with st.expander("Ver dados utilizados para o Gantt"):
                     st.dataframe(df_g)

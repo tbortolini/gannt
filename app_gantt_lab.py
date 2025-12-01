@@ -343,9 +343,9 @@ else:
                 st.markdown(
                     """
                     ---
-                    *💾 Para salvar o gráfico como imagem:**  
-                    clique no ícone *📸* no canto superior direito do gráfico  
-                    (*opção “Download plot as PNG”*).
+                    💾 Para salvar o gráfico como imagem:  
+                    *clique no ícone 📸* no canto superior direito do gráfico  
+                    (opção “Download plot as PNG”).
                     ---
                     """,
                     unsafe_allow_html=False

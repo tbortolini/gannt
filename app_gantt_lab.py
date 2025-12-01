@@ -1,3 +1,7 @@
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+import plotly.io as pio
 
 # ======================================
 # CONFIGURAÇÃO INICIAL DA APLICAÇÃO
@@ -8,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 👉 Ajuste esta URL para o link real da planilha modelo no repositório
+# 👉 Ajuste esta URL para o link real da planilha modelo no seu repositório
 URL_PLANILHA_MODELO = (
     "https://github.com/SEU_USUARIO/SEU_REPOSITORIO/raw/main/exemplo_cronograma.xlsx"
 )
@@ -16,14 +20,16 @@ URL_PLANILHA_MODELO = (
 st.title("Geração de Gráficos de Gantt para Projetos de Pesquisa")
 
 st.markdown(
-    f"""
+    """
     ## Instruções gerais para preenchimento
 
     Esta aplicação permite que cada pesquisador **defina e visualize o seu cronograma**
     de forma padronizada, gerando um gráfico de Gantt automaticamente.
-
+    
     🔗 Se preferir, você pode baixar um **modelo de planilha Excel** já formatado aqui:  
     👉 [Baixar planilha modelo]({URL_PLANILHA_MODELO})
+    
+    Ou entrar os dados manualmente na aba ao lado "Entrada manual"
 
     ### Estrutura das atividades
 
@@ -110,7 +116,7 @@ def fig_gantt(df, titulo):
       - y_idx (posição no eixo Y)
     Com:
       - fundo branco
-      - todos os textos em preto
+      - texto em preto
       - linha preta pontilhada entre projetos
     """
     # Garantir que existe y_idx
@@ -208,7 +214,7 @@ if modo == "Carregar planilha Excel":
     st.subheader("Modo: Carregar planilha Excel")
 
     st.markdown(
-        f"""
+        """
         **Formato esperado da planilha:**
 
         - Arquivo Excel (`.xlsx`).
@@ -222,9 +228,10 @@ if modo == "Carregar planilha Excel":
           - Ou uma única aba com esses mesmos campos.
 
         Cada linha da planilha deve representar **uma atividade**.
-
+        
         Se tiver dúvidas, use o modelo:  
         👉 [Baixar planilha modelo]({URL_PLANILHA_MODELO})
+        
         """
     )
 
@@ -266,7 +273,7 @@ if modo == "Carregar planilha Excel":
         st.plotly_chart(fig, use_container_width=True)
 
         st.caption(
-            "💾 Para salvar o gráfico como imagem, clique no ícone de **câmera** "
+            "💾 Para salvar o gráfico como imagem, clique no ícone da **câmera** "
             "no canto superior direito do gráfico (\"Download plot as png\")."
         )
 
@@ -338,7 +345,7 @@ else:
                 st.plotly_chart(fig, use_container_width=True)
 
                 st.caption(
-                    "💾 Para salvar o gráfico como imagem, clique no ícone de **câmera** "
+                    "💾 Para salvar o gráfico como imagem, clique no ícone da **câmera** "
                     "no canto superior direito do gráfico (\"Download plot as png\")."
                 )
 

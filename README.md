@@ -5,13 +5,15 @@ Esta aplicação permite que pesquisadores criem **gráficos de Gantt interativo
 - **Planilhas Excel** (uma aba por pesquisador ou uma aba única), ou  
 - **Entrada manual** diretamente pela interface (“sem Excel”), usando um editor de tabela interativo.
 
-É uma ferramenta pensada para laboratórios acadêmicos que precisam padronizar:
-
-- o acompanhamento de cronogramas,  
-- a clareza das entregas de cada etapa,  
-- a comunicação entre pesquisadores, PIs e coordenação.  
-
 A aplicação está disponível online via **Streamlit Cloud**, e pode ser rodada também localmente.
+---
+
+## 🌐 Como acessar a aplicação online
+
+Se a aplicação estiver publicada no Streamlit Community Cloud, o link aparecerá aqui:
+
+👉 **[Acesse a aplicação online](INSERIR_LINK_AQUI)**  
+*(Substitua pelo link gerado pelo Streamlit Cloud.)*
 
 ---
 
@@ -71,17 +73,6 @@ Ela demonstra o formato esperado e pode ser usada como modelo pelos pesquisadore
 ├── exemplo_cronograma.xlsx    # Exemplo de planilha
 └── README.md                  # Este arquivo
 ```
-
----
-
-## 🌐 Como acessar a aplicação online
-
-Se a aplicação estiver publicada no Streamlit Community Cloud, o link aparecerá aqui:
-
-👉 **[Acesse a aplicação online](INSERIR_LINK_AQUI)**  
-*(Substitua pelo link gerado pelo Streamlit Cloud.)*
-
----
 
 ## 💻 Executar localmente
 

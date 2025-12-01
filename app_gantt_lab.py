@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import plotly.io as pio
 
 # ======================================
 # CONFIGURAÇÃO INICIAL DA APLICAÇÃO
@@ -105,13 +106,13 @@ def fig_gantt(df, titulo):
       - y_idx (posição no eixo Y)
     Com:
       - fundo branco
+      - texto em preto
       - linha preta pontilhada entre projetos
     """
     # Garantir que existe y_idx
     if "y_idx" not in df.columns:
         df = preparar_df_para_gantt(df)
 
-    # Gráfico usando y_idx como eixo Y numérico
     fig = px.timeline(
         df,
         x_start="Início",
@@ -129,16 +130,30 @@ def fig_gantt(df, titulo):
         tickmode="array",
         tickvals=df["y_idx"],
         ticktext=df["Tarefa"],
-        autorange="reversed"
+        autorange="reversed",
+        tickfont=dict(color="black"),
+        title_font=dict(color="black")
     )
 
-    # Fundo branco
+    fig.update_xaxes(
+        tickfont=dict(color="black"),
+        title_font=dict(color="black"),
+        linecolor="black",
+        gridcolor="lightgray"
+    )
+
+    # Fundo branco + textos em preto
     fig.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
+        font=dict(color="black"),
         xaxis_title="Tempo",
         yaxis_title="Tarefas",
         legend_title="Projeto",
+        legend=dict(
+            font=dict(color="black"),
+            title_font=dict(color="black")
+        ),
         margin=dict(l=50, r=30, t=70, b=50),
     )
 
@@ -148,7 +163,6 @@ def fig_gantt(df, titulo):
         projeto_atual = df["Projeto"].iloc[i]
         proximo_projeto = df["Projeto"].iloc[i + 1]
         if projeto_atual != proximo_projeto:
-            # linha horizontal entre i e i+1 (no meio: i + 0.5)
             shapes.append(
                 dict(
                     type="line",
@@ -168,13 +182,15 @@ def fig_gantt(df, titulo):
     return fig
 
 
+
 def gerar_botao_download_png(fig, nome_arquivo="gantt.png", label="Baixar gráfico como PNG"):
     """
     Gera um botão de download de PNG para a figura Plotly.
-    Requer 'kaleido' instalado.
+    Usa 'kaleido' no backend.
+    Se falhar, orienta o usuário a usar o botão padrão de download do Plotly.
     """
     try:
-        png_bytes = fig.to_image(format="png")
+        png_bytes = pio.to_image(fig, format="png", engine="kaleido")
         st.download_button(
             label=label,
             data=png_bytes,
@@ -182,8 +198,13 @@ def gerar_botao_download_png(fig, nome_arquivo="gantt.png", label="Baixar gráfi
             mime="image/png"
         )
     except Exception as e:
-        st.warning(f"Não foi possível gerar o PNG automaticamente ({e}). "
-                   f"Verifique se o pacote 'kaleido' está instalado.")
+        st.warning(
+            "Não foi possível gerar o PNG automaticamente no servidor "
+            f"({e}).\n\n"
+            "Você ainda pode baixar a imagem clicando no ícone de câmera "
+            "no canto superior direito do gráfico (\"Download plot as png\")."
+        )
+
 
 
 # ======================================

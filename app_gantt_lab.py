@@ -14,17 +14,19 @@ st.set_page_config(
 
 # 👉 Ajuste esta URL para o link real da planilha modelo no seu repositório
 URL_PLANILHA_MODELO = (
-    "https://github.com/SEU_USUARIO/SEU_REPOSITORIO/raw/main/exemplo_cronograma.xlsx"
+    "https://github.com/tbortolini/gannt/raw/main/exemplo_cronograma.xlsx"
 )
 
 st.title("Geração de Gráficos de Gantt para Projetos de Pesquisa")
 
 st.markdown(
     """
-    ## Instruções gerais para preenchimento
+    ## Instruções gerais
 
     Esta aplicação permite que cada pesquisador **defina e visualize o seu cronograma**
     de forma padronizada, gerando um gráfico de Gantt automaticamente.
+    
+    No menu ao lado você pode selecionar fazer o **upload de planilha Excel** quanto **preenchimento manual na própria tela**.
     
     🔗 Se preferir, você pode baixar um **modelo de planilha Excel** já formatado aqui:  
     👉 [Baixar planilha modelo]({URL_PLANILHA_MODELO})
@@ -33,28 +35,17 @@ st.markdown(
 
     ### Estrutura das atividades
 
-    - Cada linha do cronograma representa **uma atividade**.
+    - Cada linha do cronograma deve representar **uma atividade**.
     - Para cada atividade, preencha:
-      - **Projeto** – nome do projeto ou subprojeto (ex.: `Dowsing`, `GML`, etc.).
-      - **Tarefa** – o que será feito em termos operacionais (ex.: `Coleta de dados fase 1`).
+      - **Projeto** – nome do projeto ou subprojeto se houver mais de um(ex.: `GML`,`NOEs`, `Decoding` etc.).
+      - **Tarefa** – o que será feito (ex.: `Coleta de dados`).
       - **Início** – data de início no formato **DD-MM-YYYY** (ex.: `01-03-2025`).
       - **Fim** – data de fim no formato **DD-MM-YYYY** (ex.: `31-05-2025`).
       - **Entrega_mensurável** – qual é o resultado concreto ao final dessa atividade
-        (ex.: para `Coleta de dados`, a entrega pode ser `Banco de dados organizado`).
+        (ex.: para `Coleta de dados`, a entrega pode ser `Banco de dados organizado e documentado`).
+            - Cada atividade do cronograma **deve ter uma entrega mensurável**.  
+            - Isso ajuda a conectar o cronograma com resultados concretos e verificáveis.
 
-    ### Sobre as entregas mensuráveis
-
-    Cada atividade do cronograma **deve ter uma entrega mensurável**.  
-    Isso ajuda a conectar o cronograma com resultados concretos e verificáveis.
-
-    Alguns exemplos:
-
-    - `Revisão da literatura` → entrega: **arquivo com revisão inicial** ou **bibliografia organizada em um gerenciador (Zotero, Mendeley)**.  
-    - `Coleta de dados` → entrega: **banco de dados em formato padronizado**.  
-    - `Análise de dados preliminar` → entrega: **notebook com análises exploratórias**.  
-    - `Redação do artigo (introdução)` → entrega: **rascunho da seção de introdução**.
-
-    Você pode usar tanto **upload de planilha Excel** quanto **preenchimento manual na própria tela**.
     """
 )
 
@@ -218,8 +209,7 @@ if modo == "Carregar planilha Excel":
         **Formato esperado da planilha:**
 
         - Arquivo Excel (`.xlsx`).
-        - Você pode usar:
-          - **Uma aba por pesquisador**, com as colunas:
+        - Use as colunas:
             - `Projeto`
             - `Tarefa`
             - `Início` (DD-MM-YYYY)
@@ -272,10 +262,16 @@ if modo == "Carregar planilha Excel":
         fig = fig_gantt(df_g, f"Cronograma – {aba_escolhida}")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.caption(
-            "💾 Para salvar o gráfico como imagem, clique no ícone da **câmera** "
-            "no canto superior direito do gráfico (\"Download plot as png\")."
-        )
+        st.markdown(
+            """
+            ---
+            **💾 Para salvar o gráfico como imagem:**  
+            clique no ícone da **📸 câmera** no canto superior direito do gráfico  
+            (*opção “Download plot as PNG”*).
+            ---
+            """,
+            unsafe_allow_html=False
+            )
 
     else:
         st.info("Envie um arquivo Excel para gerar o gráfico de Gantt.")
@@ -344,10 +340,16 @@ else:
                 fig = fig_gantt(df_g, "Cronograma – entrada manual")
                 st.plotly_chart(fig, use_container_width=True)
 
-                st.caption(
-                    "💾 Para salvar o gráfico como imagem, clique no ícone da **câmera** "
-                    "no canto superior direito do gráfico (\"Download plot as png\")."
-                )
+                st.markdown(
+                    """
+                    ---
+                    **💾 Para salvar o gráfico como imagem:**  
+                    clique no ícone da **📸 câmera** no canto superior direito do gráfico  
+                    (*opção “Download plot as PNG”*).
+                    ---
+                    """,
+                    unsafe_allow_html=False
+)
 
                 with st.expander("Ver dados utilizados para o Gantt"):
                     st.dataframe(df_g)

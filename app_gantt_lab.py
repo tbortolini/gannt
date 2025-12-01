@@ -1,7 +1,3 @@
-import pandas as pd
-import plotly.express as px
-import streamlit as st
-import plotly.io as pio
 
 # ======================================
 # CONFIGURAÇÃO INICIAL DA APLICAÇÃO
@@ -12,14 +8,22 @@ st.set_page_config(
     layout="wide"
 )
 
+# 👉 Ajuste esta URL para o link real da planilha modelo no repositório
+URL_PLANILHA_MODELO = (
+    "https://github.com/SEU_USUARIO/SEU_REPOSITORIO/raw/main/exemplo_cronograma.xlsx"
+)
+
 st.title("Geração de Gráficos de Gantt para Projetos de Pesquisa")
 
 st.markdown(
-    """
+    f"""
     ## Instruções gerais para preenchimento
 
     Esta aplicação permite que cada pesquisador **defina e visualize o seu cronograma**
     de forma padronizada, gerando um gráfico de Gantt automaticamente.
+
+    🔗 Se preferir, você pode baixar um **modelo de planilha Excel** já formatado aqui:  
+    👉 [Baixar planilha modelo]({URL_PLANILHA_MODELO})
 
     ### Estrutura das atividades
 
@@ -106,7 +110,7 @@ def fig_gantt(df, titulo):
       - y_idx (posição no eixo Y)
     Com:
       - fundo branco
-      - texto em preto
+      - todos os textos em preto
       - linha preta pontilhada entre projetos
     """
     # Garantir que existe y_idx
@@ -182,31 +186,6 @@ def fig_gantt(df, titulo):
     return fig
 
 
-
-def gerar_botao_download_png(fig, nome_arquivo="gantt.png", label="Baixar gráfico como PNG"):
-    """
-    Gera um botão de download de PNG para a figura Plotly.
-    Usa 'kaleido' no backend.
-    Se falhar, orienta o usuário a usar o botão padrão de download do Plotly.
-    """
-    try:
-        png_bytes = pio.to_image(fig, format="png", engine="kaleido")
-        st.download_button(
-            label=label,
-            data=png_bytes,
-            file_name=nome_arquivo,
-            mime="image/png"
-        )
-    except Exception as e:
-        st.warning(
-            "Não foi possível gerar o PNG automaticamente no servidor "
-            f"({e}).\n\n"
-            "Você ainda pode baixar a imagem clicando no ícone de câmera "
-            "no canto superior direito do gráfico (\"Download plot as png\")."
-        )
-
-
-
 # ======================================
 # ESCOLHA DO MODO DE ENTRADA
 # ======================================
@@ -229,7 +208,7 @@ if modo == "Carregar planilha Excel":
     st.subheader("Modo: Carregar planilha Excel")
 
     st.markdown(
-        """
+        f"""
         **Formato esperado da planilha:**
 
         - Arquivo Excel (`.xlsx`).
@@ -243,6 +222,9 @@ if modo == "Carregar planilha Excel":
           - Ou uma única aba com esses mesmos campos.
 
         Cada linha da planilha deve representar **uma atividade**.
+
+        Se tiver dúvidas, use o modelo:  
+        👉 [Baixar planilha modelo]({URL_PLANILHA_MODELO})
         """
     )
 
@@ -283,8 +265,10 @@ if modo == "Carregar planilha Excel":
         fig = fig_gantt(df_g, f"Cronograma – {aba_escolhida}")
         st.plotly_chart(fig, use_container_width=True)
 
-        # Botão de download em PNG
-        gerar_botao_download_png(fig, nome_arquivo=f"gantt_{aba_escolhida}.png")
+        st.caption(
+            "💾 Para salvar o gráfico como imagem, clique no ícone de **câmera** "
+            "no canto superior direito do gráfico (\"Download plot as png\")."
+        )
 
     else:
         st.info("Envie um arquivo Excel para gerar o gráfico de Gantt.")
@@ -353,8 +337,10 @@ else:
                 fig = fig_gantt(df_g, "Cronograma – entrada manual")
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Botão de download em PNG
-                gerar_botao_download_png(fig, nome_arquivo="gantt_manual.png")
+                st.caption(
+                    "💾 Para salvar o gráfico como imagem, clique no ícone de **câmera** "
+                    "no canto superior direito do gráfico (\"Download plot as png\")."
+                )
 
                 with st.expander("Ver dados utilizados para o Gantt"):
                     st.dataframe(df_g)

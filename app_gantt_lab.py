@@ -1,6 +1,6 @@
-"""Gantt para pesquisa: fontes ajustaveis e PDF/PNG identicos ao Plotly.
+"""Gantt para pesquisa: titulo editavel, legenda configuravel e PDF fiel ao Plotly.
 
-Execucao: streamlit run gantt_streamlit_A4_fontes_Plotly.py
+Execucao: streamlit run gantt_streamlit_A4_titulo_legenda.py
 
 Requisitos Python: streamlit, pandas, openpyxl, plotly>=6.1, kaleido>=1, pymupdf
 Requisito adicional para exportacao Kaleido v1: Chrome ou Chromium.
@@ -8,12 +8,13 @@ Em Streamlit Community Cloud, inclua os arquivos requirements.txt e packages.txt
 na raiz do repositorio. O arquivo packages.txt instala Chromium no servidor.
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from hashlib import sha256
 from io import BytesIO
 import json
 import math
 import textwrap
+from html import escape
 import zipfile
 
 import pandas as pd
@@ -45,6 +46,9 @@ class Opcoes:
     largura_tarefas: int = 39   # porcentagem da largura total
     espacamento: float = 2.55  # altura minima por tarefa em multiplos do tamanho da fonte
     dividir_paginas: bool = True
+    exibir_titulo: bool = True
+    exibir_periodo: bool = True
+    legenda_dentro: bool = False
 
 
 def validar_e_preparar(df):
@@ -106,14 +110,18 @@ def passo_tiques(meses, orientacao):
 
 def margens_figura(orientacao, op, n_projetos):
     largura, altura = A4_PIXELS[orientacao]
-    # A legenda ocupa espaco reservado (inclusive quando quebra em varias linhas).
-    por_linha_aproximado = 3 if orientacao == "retrato" else 5
-    linhas_legenda = max(1, math.ceil(n_projetos / por_linha_aproximado))
-    inferior = min(int(altura * 0.27), 64 + linhas_legenda * (op.legenda + 10))
+    # Quando a legenda fica dentro do grafico, aproveitamos a margem inferior.
+    if op.legenda_dentro:
+        inferior = 62
+    else:
+        por_linha_aproximado = 3 if orientacao == "retrato" else 5
+        linhas_legenda = max(1, math.ceil(n_projetos / por_linha_aproximado))
+        inferior = min(int(altura * 0.27), 64 + linhas_legenda * (op.legenda + 10))
+    superior = 100 if (op.exibir_titulo and op.exibir_periodo) else (75 if op.exibir_titulo else 32)
     return {
         "l": int(largura * op.largura_tarefas / 100),
         "r": 25,
-        "t": 100,
+        "t": superior,
         "b": inferior,
     }
 
@@ -219,35 +227,55 @@ def fig_gantt(pagina, df_completo, titulo, orientacao, op, numero_pagina, total_
         ticks="",
     )
 
+    # Um titulo vazio equivale a ocultar o titulo e seu subtitulo (periodo).
+    mostrar_titulo = op.exibir_titulo and bool(titulo.strip())
     data_ini, data_fim = df_completo["Início"].min(), df_completo["Fim"].max()
     periodo = f"{data_ini:%d/%m/%Y} – {data_fim:%d/%m/%Y}"
+    if mostrar_titulo:
+        texto_titulo = escape(titulo)
+        if op.exibir_periodo:
+            texto_titulo += f"<br><sup>{periodo}</sup>"
+        configuracao_titulo = dict(
+            text=texto_titulo,
+            font=dict(size=op.titulo, color="#1C2735"),
+            x=0.5, xanchor="center", y=0.973, yanchor="top",
+        )
+    else:
+        configuracao_titulo = None
+
+    # Dentro: canto superior direito da AREA DO GRAFICO. Fundo branco semitransparente
+    # para a legenda permanecer legivel sobre as barras. Fora: abaixo, como antes.
+    if op.legenda_dentro:
+        configuracao_legenda = dict(
+            title=None,
+            orientation="v",
+            x=0.99, xanchor="right",
+            y=0.99, yanchor="top",
+            bgcolor="rgba(255,255,255,0.92)",
+            bordercolor="rgba(160,170,185,0.65)", borderwidth=1,
+            font=dict(size=op.legenda, color="#202020"),
+            itemsizing="constant", tracegroupgap=3,
+        )
+    else:
+        configuracao_legenda = dict(
+            title=None,
+            orientation="h",
+            x=0, xanchor="left",
+            y=-0.10, yanchor="top",
+            font=dict(size=op.legenda, color="#202020"),
+            itemsizing="constant", tracegroupgap=3,
+        )
+
     fig.update_layout(
         width=largura,
         height=altura,
         autosize=False,
-        title=dict(
-            text=f"{titulo}<br><sup>{periodo}</sup>",
-            font=dict(size=op.titulo, color="#1C2735"),
-            x=0.5,
-            xanchor="center",
-            y=0.973,
-            yanchor="top",
-        ),
+        title=configuracao_titulo,
         font=dict(family="Arial, sans-serif", size=op.datas, color="#202020"),
         margin=margens,
         plot_bgcolor="white",
         paper_bgcolor="white",
-        legend=dict(
-            title=None,
-            orientation="h",
-            x=0,
-            xanchor="left",
-            y=-0.10,
-            yanchor="top",
-            font=dict(size=op.legenda, color="#202020"),
-            itemsizing="constant",
-            tracegroupgap=3,
-        ),
+        legend=configuracao_legenda,
         bargap=0.38,
         hoverlabel=dict(font_size=13),
     )
@@ -311,6 +339,19 @@ def gerar_arquivos(figuras, orientacao, criar_png=True):
 
 
 def mostrar_resultado(df, titulo, modo_impressao, op):
+    # Valor inicial automatico conforme a aba Excel ou modo manual; editavel pelo usuario.
+    # Uma chave por titulo padrao evita carregar o titulo de uma aba para outra.
+    chave = "titulo_gantt_" + sha256(titulo.encode("utf-8")).hexdigest()[:12]
+    titulo = container_titulo.text_input(
+        "Texto do título do gráfico",
+        value=titulo,
+        key=chave,
+        disabled=not op.exibir_titulo,
+        help="Edite livremente. Apague todo o texto ou desmarque 'Exibir título' para removê-lo.",
+    ).strip()
+    if not titulo:
+        op = replace(op, exibir_titulo=False, exibir_periodo=False)
+
     orientacao = escolher_orientacao(modo_impressao, df)
     paginas, capacidade = dividir_dataframe(df, orientacao, op)
     total_paginas = len(paginas)
@@ -447,6 +488,19 @@ dividir_paginas = st.sidebar.checkbox(
     help="Preserva o tamanho das fontes em cronogramas longos.",
 )
 st.sidebar.divider()
+st.sidebar.header("Título e legenda")
+# O campo do titulo e preenchido quando sabemos qual aba/projeto esta selecionado.
+container_titulo = st.sidebar.container()
+exibir_titulo = st.sidebar.checkbox("Exibir título", value=True)
+exibir_periodo = st.sidebar.checkbox(
+    "Mostrar período abaixo do título", value=True, disabled=not exibir_titulo,
+)
+legenda_dentro = st.sidebar.selectbox(
+    "Posição da legenda",
+    ["Abaixo do gráfico", "Dentro do gráfico (canto superior direito)"],
+    index=0,
+) == "Dentro do gráfico (canto superior direito)"
+st.sidebar.divider()
 st.sidebar.header("Tamanho das fontes")
 fonte_titulo = st.sidebar.slider("Título", 12, 34, 22, 1)
 fonte_tarefas = st.sidebar.slider("Nomes das tarefas", 8, 24, 15, 1)
@@ -469,6 +523,9 @@ opcoes = Opcoes(
     largura_tarefas=largura_tarefas,
     espacamento=espacamento,
     dividir_paginas=dividir_paginas,
+    exibir_titulo=exibir_titulo,
+    exibir_periodo=exibir_periodo,
+    legenda_dentro=legenda_dentro,
 )
 
 if modo == "Carregar planilha Excel":
